@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "liste.h"
 #include <string.h>
+#include <float.h>
 
 Un_elem *inserer_liste_trie(Un_elem *liste, Un_truc *truc){
     if(liste == NULL){
@@ -86,4 +87,23 @@ Un_elem *lire_stations( char *nom_fichier){
     }
     fclose(f);
     return head;
+}
+
+void limites_zone(Un_elem *liste, Une_coord *limite_no, Une_coord *limite_se){
+    if(liste == NULL) return;
+    limite_no->lon = FLT_MAX;
+    limite_no->lat = FLT_MIN;
+
+    limite_se->lon = FLT_MIN;
+    limite_se->lat = FLT_MAX;
+
+    while(liste != NULL){
+        if(liste->truc->coord.lon < limite_no->lon) limite_no->lon = liste->truc->coord.lon;
+        if(liste->truc->coord.lat > limite_no->lat) limite_no->lat = liste->truc->coord.lat;
+
+        if(liste->truc->coord.lon > limite_se->lon) limite_se->lon = liste->truc->coord.lon;
+        if(liste->truc->coord.lat < limite_se->lat) limite_se->lat = liste->truc->coord.lat;
+
+        liste = liste->suiv;
+    }
 }

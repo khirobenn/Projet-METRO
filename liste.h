@@ -12,5 +12,6 @@ void ecrire_liste( FILE *flux, Un_elem *liste);
 void detruire_liste(Un_elem *liste);
 void detruire_liste_et_truc(Un_elem *liste);
 Un_elem *lire_stations( char *nom_fichier);
+void limites_zone(Un_elem *liste, Une_coord *limite_no, Une_coord *limite_se);
 
 #endif
