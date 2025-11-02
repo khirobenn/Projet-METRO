@@ -71,7 +71,7 @@ Un_elem *lire_stations( char *nom_fichier){
     char nom_lecture[20];
     Un_elem * head = NULL;
     // %[^\n]s trouvé sur stack overflow pour lire une chaine de caractères avec espace
-    while(!fscanf(f, "%f;%f;%[^\n]s\n", &lon, &lat, nom_lecture)){
+    while(fscanf(f, "%f;%f;%[^\n]s\n", &lon, &lat, nom_lecture) != EOF){
         char *nom = malloc(sizeof(20));
         strcpy(nom, nom_lecture);
         Une_coord cord = {.lon = lon, .lat = lat};

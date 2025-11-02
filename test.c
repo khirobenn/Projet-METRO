@@ -6,8 +6,10 @@ int main(){
     char str[30];
     float a;
     float b;
-    fscanf(f, "%f;%f;%[^\n]s", &a, &b, str);
-    printf("%f\t%f\t%s\n", a, b, str);
+    
+    while(fscanf(f, "%f;%f;%[^\n]s", &a, &b, str) != EOF){
+        printf("%f\t%f\t%s\n", a, b, str);
+    }
     fclose(f);
     return 0;
 

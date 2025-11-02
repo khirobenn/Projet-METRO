@@ -8,4 +8,9 @@ typedef struct _une_ligne {
     float intervalle; //Intervalle moyen entre 2 rames
 struct _une_ligne *suiv;} Une_ligne;
 
+Une_ligne *lire_lignes(char *nom_fichier); 
+void afficher_lignes(Une_ligne *lligne); 
+void detruire_lignes(Une_ligne *lligne); 
+Une_ligne *chercher_ligne(Une_ligne *lligne, char *code); 
+
 #endif
