@@ -24,21 +24,11 @@ Un_elem *inserer_liste_trie(Un_elem *liste, Un_truc *truc){
 }
 
 void ecrire_liste( FILE *flux, Un_elem *liste){
-    int a = 0;
-    float lat;
-    float lon;
-    char nom_lecture[20];
-    while(!fscanf(flux, "%f;%f;%s\n", &lon, &lat, nom_lecture)){
-        char *nom = malloc(sizeof(20));
-        strcpy(nom, nom_lecture);
-        Une_coord cord = {.lon = lon, .lat = lat};
-
-        Une_station station = {.nom = nom, .tab_con = NULL, .con_pcc = NULL, .nb_con = 0};
-
-        Tdata data;
-        data.sta = station;
-        
-        Un_truc *truc = creer_truc(cord, STA, data, 0);
+    while(liste != NULL){
+        if(liste->truc->type == STA){
+            printf("Latitude : %f\tLongitude: %f\t nom : %s\n", liste->truc->coord.lat, liste->truc->coord.lon, liste->truc->data.sta.nom);
+        }
+        liste = liste->suiv;
     }
 }
 

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "ligne.h"
 #include <string.h>
+#include <stdlib.h>
 
 #define CODE_TAILLE 8
 #define COULEUR_TAILLE 8

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "abr_type.h"
 #include <string.h>
+#include <stdlib.h>
 
 Un_nabr *creer_nabr(Un_truc *truc){
     Un_nabr *abr = malloc(sizeof(Un_nabr));

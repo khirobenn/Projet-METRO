@@ -1,16 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "abr_type.h"
+#include "aqrtopo.h"
+#include "connexion.h"
+#include "coord.h"
+#include "ligne.h"
+#include "liste.h"
+#include "station.h"
+#include "truc.h"
 
 int main(){
-    FILE * f = fopen("test.csv", "r");
-    char str[30];
-    float a;
-    float b;
-    
-    while(fscanf(f, "%f;%f;%[^\n]s", &a, &b, str) != EOF){
-        printf("%f\t%f\t%s\n", a, b, str);
-    }
-    fclose(f);
+    Un_elem *l = lire_stations("test.csv");
+    ecrire_liste(NULL, l);
+    detruire_liste_et_truc(l);
     return 0;
-
 }
