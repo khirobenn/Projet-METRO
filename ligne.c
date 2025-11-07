@@ -3,9 +3,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#define CODE_TAILLE 8
-#define COULEUR_TAILLE 8
-
 Une_ligne *lire_lignes(char *nom_fichier){
     FILE *f = fopen(nom_fichier, "r");
     char code[CODE_TAILLE];
@@ -47,7 +44,7 @@ Une_ligne *lire_lignes(char *nom_fichier){
 
 void afficher_lignes(Une_ligne *lligne){
     while(lligne != NULL){
-        printf("%s ; %f ; %f ; %s", lligne->code, lligne->vitesse, lligne->intervalle, lligne->color);
+        printf("%s ; %f ; %f ; %s\n", lligne->code, lligne->vitesse, lligne->intervalle, lligne->color);
         lligne = lligne->suiv;
     }
 }

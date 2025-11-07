@@ -4,6 +4,8 @@
 #include <string.h>
 #include <float.h>
 
+#define TAILLE_NOM 40
+
 Un_elem *inserer_liste_trie(Un_elem *liste, Un_truc *truc){
     if(liste == NULL){
         Un_elem *l = malloc(sizeof(Un_elem));
@@ -55,18 +57,17 @@ void detruire_liste_et_truc(Un_elem *liste){
 
 Un_elem *lire_stations( char *nom_fichier){
     FILE *f = fopen(nom_fichier, "r");
-    int a = 0;
     float lat;
     float lon;
-    char nom_lecture[20];
+    char nom_lecture[TAILLE_NOM];
     Un_elem * head = NULL;
     // %[^\n]s trouvé sur stack overflow pour lire une chaine de caractères avec espace
     while(fscanf(f, "%f;%f;%[^\n]s\n", &lon, &lat, nom_lecture) != EOF){
-        char *nom = malloc(sizeof(20));
+        char *nom = malloc(sizeof(char)*TAILLE_NOM);
         strcpy(nom, nom_lecture);
         Une_coord cord = {.lon = lon, .lat = lat};
 
-        Une_station station = {.nom = nom, .tab_con = NULL, .con_pcc = NULL, .nb_con = 0};
+        Une_station station = {.nom = nom, .tab_con = NULL, .tab_con = NULL, .nb_con = 0};
 
         Tdata data;
         data.sta = station;
@@ -96,4 +97,68 @@ void limites_zone(Un_elem *liste, Une_coord *limite_no, Une_coord *limite_se){
 
         liste = liste->suiv;
     }
+}
+
+Un_elem *inserer_deb_liste(Un_elem *liste, Un_truc *truc){
+    Un_elem *l = malloc(sizeof(Un_elem));
+    l->truc = truc;
+    l->suiv = liste;
+    return l;
+}
+
+Un_elem *lire_connexions(char *nom_fichier, Une_ligne *liste_ligne, Un_nabr *abr_sta){
+    FILE *f = fopen(nom_fichier, "r");
+    if(f == NULL){
+        printf("Erreur lecture du fichier!\n");
+        return NULL;
+    }
+
+    char line[100];
+    Un_elem *connexion = NULL;
+
+    while(fscanf(f, "%s\n", line) != EOF){
+        if(line[0] != '#'){
+            char code_ligne[CODE_TAILLE];
+            char nom_sta1[TAILLE_NOM];
+            char nom_sta2[TAILLE_NOM];
+            float distance;
+            sscanf(line, "%s ; %[^\n]s\n; %[^\n]s\n ; %f", code_ligne, nom_sta1, nom_sta2, &distance);
+            Une_ligne * ligne = chercher_ligne(liste_ligne, code_ligne);
+            if(ligne != NULL){
+                Un_truc *sta1 = chercher_station(abr_sta, nom_sta1);
+                Un_truc *sta2 = chercher_station(abr_sta, nom_sta2);
+
+                // %%Calcul de la distance si distance == 0
+                ajout_connexion(sta1, sta2);
+                ajout_connexion(sta2, sta1);
+
+                Tdata data = {.con.ligne = ligne, .con.sta_dep = sta1, .con.sta_arr = sta2};
+                Une_coord cord = {.lat = .0, .lon = .0};
+
+                Un_truc *truc = creer_truc(cord, CON, data, distance);
+                connexion = inserer_deb_liste(connexion, truc);
+            }
+        }
+    }
+    fclose(f);
+    return connexion;
+}
+
+void ajout_connexion(Un_truc *a, Un_truc *b){
+    if(a->data.sta.nb_con == 0){
+        a->data.sta.tab_con = malloc(sizeof(Un_truc *));
+        if(a->data.sta.tab_con == NULL){
+            printf("Erreur allocation tableau de connexions\n");
+            return;
+        }
+    }
+    else{
+        a->data.sta.tab_con = realloc(a->data.sta.tab_con, sizeof(Un_truc *) * (a->data.sta.nb_con + 1));
+        if(a->data.sta.tab_con == NULL){
+            printf("Erreur reallocation tableau de connexions\n");
+            return;
+        }
+    }
+    a->data.sta.tab_con[a->data.sta.nb_con] = b;
+    (a->data.sta.nb_con)++;
 }

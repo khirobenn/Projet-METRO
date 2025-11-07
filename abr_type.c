@@ -2,6 +2,7 @@
 #include "abr_type.h"
 #include <string.h>
 #include <stdlib.h>
+#include "liste.h"
 
 Un_nabr *creer_nabr(Un_truc *truc){
     Un_nabr *abr = malloc(sizeof(Un_nabr));
@@ -31,6 +32,7 @@ Un_nabr *construire_abr(Un_elem *liste_sta){
             Un_nabr *n = creer_nabr(liste_sta->truc);
             abr = inserer_abr(abr, n);
         }
+        liste_sta = liste_sta->suiv;
     }
 
     return abr;
@@ -52,8 +54,17 @@ void detruire_abr(Un_nabr *abr){
 
 Un_truc *chercher_station(Un_nabr *abr, char *nom){
     if(abr == NULL) return NULL;
+    printf("current = %s\n", abr->truc->data.sta.nom);
     int cmp = strcmp(nom, abr->truc->data.sta.nom);
     if(cmp == 0) return abr->truc;
     else if(cmp < 0) return chercher_station(abr->g, nom);
     return chercher_station(abr->d, nom);
+}
+
+void print_arb(Un_nabr *a){
+    if(a != NULL){
+        print_arb(a->g);
+        printf("%s\n", a->truc->data.sta.nom);
+        print_arb(a->d);
+    }
 }

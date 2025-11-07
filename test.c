@@ -9,9 +9,33 @@
 #include "station.h"
 #include "truc.h"
 
-int main(){
-    Un_elem *l = lire_stations("test.csv");
+int main(int argc, char **argv){
+    if(argc <= 1){
+        printf("Erreur : ./test : arg1 arg2 ..\n");
+        return 1;
+    }
+    Un_elem *l = lire_stations(argv[1]);
     ecrire_liste(NULL, l);
+    Une_ligne *ligne = lire_lignes(argv[2]);
+    afficher_lignes(ligne);
+
+    printf("------------------------------\n");
+
+    Un_nabr *stations = construire_abr(l);
+    print_arb(stations);
+
+    char code[] = "Denfert Rochereau";
+    Un_truc *t = chercher_station(stations, code);
+    if(t == NULL){
+        printf("Pas de station avec ce nom\n");
+    }
+    else{
+        printf("%s est la !!\n", t->data.sta.nom);
+    }
+
+    
+    detruire_abr(stations);
+    detruire_lignes(ligne);
     detruire_liste_et_truc(l);
     return 0;
 }
