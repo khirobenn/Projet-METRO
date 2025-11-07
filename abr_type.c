@@ -54,7 +54,6 @@ void detruire_abr(Un_nabr *abr){
 
 Un_truc *chercher_station(Un_nabr *abr, char *nom){
     if(abr == NULL) return NULL;
-    printf("current = %s\n", abr->truc->data.sta.nom);
     int cmp = strcmp(nom, abr->truc->data.sta.nom);
     if(cmp == 0) return abr->truc;
     else if(cmp < 0) return chercher_station(abr->g, nom);

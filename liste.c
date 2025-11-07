@@ -30,6 +30,9 @@ void ecrire_liste( FILE *flux, Un_elem *liste){
         if(liste->truc->type == STA){
             printf("Latitude : %f\tLongitude: %f\t nom : %s\n", liste->truc->coord.lat, liste->truc->coord.lon, liste->truc->data.sta.nom);
         }
+        else{
+            printf("Pour aller de %s à %s, prenez la ligne %s avec une durée de %f minutes.\n", liste->truc->data.con.sta_dep->data.sta.nom, liste->truc->data.con.sta_arr->data.sta.nom, liste->truc->data.con.ligne->code, liste->truc->user_val);
+        }
         liste = liste->suiv;
     }
 }
@@ -62,7 +65,7 @@ Un_elem *lire_stations( char *nom_fichier){
     char nom_lecture[TAILLE_NOM];
     Un_elem * head = NULL;
     // %[^\n]s trouvé sur stack overflow pour lire une chaine de caractères avec espace
-    while(fscanf(f, "%f;%f;%[^\n]s\n", &lon, &lat, nom_lecture) != EOF){
+    while(fscanf(f, "%f;%f;%[^\n]\n", &lon, &lat, nom_lecture) != EOF){
         char *nom = malloc(sizeof(char)*TAILLE_NOM);
         strcpy(nom, nom_lecture);
         Une_coord cord = {.lon = lon, .lat = lat};
@@ -116,26 +119,35 @@ Un_elem *lire_connexions(char *nom_fichier, Une_ligne *liste_ligne, Un_nabr *abr
     char line[100];
     Un_elem *connexion = NULL;
 
-    while(fscanf(f, "%s\n", line) != EOF){
+    while(fgets(line, 100, f) != NULL){
+        printf("%s", line);
         if(line[0] != '#'){
             char code_ligne[CODE_TAILLE];
             char nom_sta1[TAILLE_NOM];
             char nom_sta2[TAILLE_NOM];
-            float distance;
-            sscanf(line, "%s ; %[^\n]s\n; %[^\n]s\n ; %f", code_ligne, nom_sta1, nom_sta2, &distance);
+            float duree;
+            sscanf(line, "%s ; %[^;] ; %[^;] ; %f\n", code_ligne, nom_sta1, nom_sta2, &duree);
+            nom_sta1[strlen(nom_sta1) - 1] = '\0';
+            nom_sta2[strlen(nom_sta2) - 1] = '\0';
             Une_ligne * ligne = chercher_ligne(liste_ligne, code_ligne);
             if(ligne != NULL){
                 Un_truc *sta1 = chercher_station(abr_sta, nom_sta1);
                 Un_truc *sta2 = chercher_station(abr_sta, nom_sta2);
 
-                // %%Calcul de la distance si distance == 0
-                ajout_connexion(sta1, sta2);
-                ajout_connexion(sta2, sta1);
+                // %%Calcul de la durée si duree == 0
+                if(sta1 != NULL && sta2 != NULL){
+                    ajout_connexion(sta1, sta2);
+                    ajout_connexion(sta2, sta1);
+                    printf("> Connexion ajouté avec succés.\n\n");
+                }
+                else{
+                    printf("> Erreur : station non existante.\n\n");
+                }
 
                 Tdata data = {.con.ligne = ligne, .con.sta_dep = sta1, .con.sta_arr = sta2};
                 Une_coord cord = {.lat = .0, .lon = .0};
 
-                Un_truc *truc = creer_truc(cord, CON, data, distance);
+                Un_truc *truc = creer_truc(cord, CON, data, duree);
                 connexion = inserer_deb_liste(connexion, truc);
             }
         }
