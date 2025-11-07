@@ -37,7 +37,7 @@ int main(int argc, char **argv){
     printf("------------------------------\n");
 
     Un_elem *connexion = lire_connexions(argv[3], ligne, stations);
-    // ecrire_liste(NULL, connexion);
+    ecrire_liste(NULL, connexion);
     detruire_liste(connexion);
     detruire_abr(stations);
     detruire_lignes(ligne);
