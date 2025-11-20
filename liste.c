@@ -14,7 +14,7 @@ Un_elem *inserer_liste_trie(Un_elem *liste, Un_truc *truc){
         return l;
     }
     
-    if(truc->user_val < liste->truc->user_val){
+    if(truc->coord.lat < liste->truc->coord.lat){
         Un_elem *l = malloc(sizeof(Un_elem));
         l->truc = truc;
         l->suiv = liste;
