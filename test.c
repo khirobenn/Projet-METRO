@@ -46,6 +46,7 @@ int main(int argc, char **argv){
     if(aqr == NULL){
         printf("aqr vide\n");
     }
+    // Coordonnées de Nation
     Une_coord coord = {.lat = 48.8483 , .lon = 2.3950};
     Un_truc * truc = chercher_aqr(aqr, coord);
     if(truc != NULL){
