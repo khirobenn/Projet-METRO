@@ -38,7 +38,7 @@ Un_noeud *construire_aqr(Un_elem *liste){
     limites_zone(liste, &limite_no, &limite_se);
     Un_noeud *n = NULL;
     while(liste != NULL){
-        inserer_aqr(n, limite_no, limite_se, liste->truc);
+        n = inserer_aqr(n, limite_no, limite_se, liste->truc);
         liste = liste->suiv;
     }
     return n;
@@ -74,7 +74,6 @@ Un_truc *chercher_aqr(Un_noeud *aqr, Une_coord coord){
     else if(coord.lat < aqr->truc->coord.lat && coord.lon < aqr->truc->coord.lon){
         return chercher_aqr(aqr->so, coord);
     }
-    // càd les coordonnées sont égales
     return aqr->truc;
 }
 
