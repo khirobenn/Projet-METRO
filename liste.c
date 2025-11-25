@@ -83,20 +83,20 @@ Un_elem *lire_stations( char *nom_fichier){
     return head;
 }
 
-void limites_zone(Un_elem *liste, Une_coord *limite_no, Une_coord *limite_se){
+void limites_zone(Un_elem *liste, Une_coord *nord_ouest, Une_coord *sud_est){
     if(liste == NULL) return;
-    limite_no->lon = FLT_MAX;
-    limite_no->lat = FLT_MIN;
+    sud_est->lon = FLT_MAX;
+    sud_est->lat = FLT_MIN;
 
-    limite_se->lon = FLT_MIN;
-    limite_se->lat = FLT_MAX;
+    nord_ouest->lon = FLT_MIN;
+    nord_ouest->lat = FLT_MAX;
 
     while(liste != NULL){
-        if(liste->truc->coord.lon < limite_no->lon) limite_no->lon = liste->truc->coord.lon;
-        if(liste->truc->coord.lat > limite_no->lat) limite_no->lat = liste->truc->coord.lat;
+        if(liste->truc->coord.lon < sud_est->lon) sud_est->lon = liste->truc->coord.lon;
+        if(liste->truc->coord.lat > sud_est->lat) sud_est->lat = liste->truc->coord.lat;
 
-        if(liste->truc->coord.lon > limite_se->lon) limite_se->lon = liste->truc->coord.lon;
-        if(liste->truc->coord.lat < limite_se->lat) limite_se->lat = liste->truc->coord.lat;
+        if(liste->truc->coord.lon > nord_ouest->lon) nord_ouest->lon = liste->truc->coord.lon;
+        if(liste->truc->coord.lat < nord_ouest->lat) nord_ouest->lat = liste->truc->coord.lat;
 
         liste = liste->suiv;
     }
@@ -175,4 +175,32 @@ void ajout_connexion(Un_truc *a, Un_truc *b){
     }
     a->data.sta.tab_con[a->data.sta.nb_con] = b;
     (a->data.sta.nb_con)++;
+}
+
+Un_truc *extraire_deb_liste(Un_elem **liste){
+    if(liste == NULL) return NULL;
+    Un_elem *t = *liste;
+    *liste = (*liste)->suiv;
+    t->suiv = NULL;
+    return t->truc;
+}
+
+Un_truc *extraire_liste(Un_elem **liste, Un_truc *truc){
+    if(liste == NULL) return truc;
+    if((*liste)->truc == truc){
+        return extraire_deb_liste(liste);
+    }
+
+    Un_elem *p = *liste;
+    while(p->suiv != NULL && p->suiv->truc != truc){
+        p = p->suiv;
+    }
+
+    if(p->suiv != NULL){
+        Un_elem *s = p->suiv;
+        p->suiv = p->suiv->suiv;
+        s->suiv = NULL;
+    }
+
+    return truc;
 }

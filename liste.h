@@ -18,6 +18,8 @@ Un_elem *lire_stations( char *nom_fichier);
 void limites_zone(Un_elem *liste, Une_coord *limite_no, Une_coord *limite_se);
 Un_elem *inserer_deb_liste(Un_elem *liste, Un_truc *truc);
 Un_elem *lire_connexions(char *nom_fichier, Une_ligne *liste_ligne, Un_nabr *abr_sta); 
+Un_truc *extraire_deb_liste(Un_elem **liste);
+Un_truc *extraire_liste(Un_elem **liste, Un_truc *truc);
 
 /* Fonctions ajoutées par nous même */
 
