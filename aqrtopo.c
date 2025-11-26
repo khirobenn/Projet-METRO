@@ -69,7 +69,7 @@ void detruire_aqr(Un_noeud *aqr){
 
 Un_truc *chercher_aqr(Un_noeud *aqr, Une_coord coord){
     if(aqr == NULL) return NULL;
-    if(aqr->truc->coord.lat == coord.lat && aqr->truc->coord.lon == coord.lon) return aqr-> truc;
+    if(aqr->truc->coord.lat == coord.lat && aqr->truc->coord.lon == coord.lon) return aqr->truc;
     Une_coord limite_mil = {.lat = (aqr->limite_se.lat + aqr->limite_no.lat)/2, .lon = (aqr->limite_se.lon + aqr->limite_no.lon)/2};
     if(coord.lat > limite_mil.lat && coord.lon < limite_mil.lon){
         return chercher_aqr(aqr->se, coord);
