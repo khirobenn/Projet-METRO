@@ -8,6 +8,7 @@
 #include "liste.h"
 #include "station.h"
 #include "truc.h"
+#include <string.h>
 
 #define LARGEUR 1800
 #define LONGUEUR 1000
@@ -19,31 +20,85 @@ int main(int argc, char **argv){
     Un_elem *l = lire_stations(argv[1]);
     mettre_a_jour_les_cercles(l);
     ecrire_liste(NULL, l);
-    // Un_elem *l = lire_stations("stations.csv");
     Un_noeud *aqr = construire_aqr(l);
-    Une_coord cord = {.lon = 2.4840, .lat = 49.2600};
-    Un_truc *t = chercher_aqr(aqr, cord);
-    if(t != NULL){
-        printf("%s\n", t->data.sta.nom);
-        sfCircleShape_setFillColor(t->data.sta.point, sfRed);
-    }
-    else{
-        printf("Pas de station\n");
-    }
 
+    
     sfVideoMode mode = {LARGEUR, LONGUEUR, 32};
     sfRenderWindow *window = sfRenderWindow_create(mode, "MAP", sfResize | sfClose, NULL);
+    sfView *fenetre = sfView_create();
+    
+    int mousePressed = 0;
+    sfVector2i currentMouseCord = sfMouse_getPositionRenderWindow(window);
 
+    sfVector2f tmp = {.x = LARGEUR/2 - 100, .y = LONGUEUR/2 - 100};
+    sfView_setCenter(fenetre, tmp);
+    float alpha = 0.2;
+    tmp.x = alpha*LARGEUR;
+    tmp.y = alpha*LONGUEUR;
+    sfView_setSize(fenetre, tmp);
+    sfRenderWindow_setView(window, fenetre);
+    
+    tmp.x = 40;
+    tmp.y = 40;
+    
+    sfRectangleShape *rect = sfRectangleShape_create();
+    sfRectangleShape_setSize(rect, tmp);
+    tmp.x = LARGEUR - tmp.x - 20;
+    tmp.y = LONGUEUR - tmp.y - 20;
+    sfRectangleShape_setPosition(rect, tmp);
+    sfRectangleShape_setFillColor(rect, sfBlack);
     while (sfRenderWindow_isOpen(window)) {
         sfEvent event;
         while (sfRenderWindow_pollEvent(window, &event)) {
-        if (event.type == sfEvtClosed) {
-            sfRenderWindow_close(window);
-        }
-        }
+            if (event.type == sfEvtClosed) {
+                sfRenderWindow_close(window);
+            }
+            else if(event.type == sfEvtMouseWheelScrolled){
+                if (event.mouseWheelScroll.delta >= 0){
+                    sfView_zoom(fenetre, 0.95f);
+                    sfRenderWindow_setView(window, fenetre);
+                }
+                else{
+                    sfView_zoom(fenetre, 1.05f);
+                    sfRenderWindow_setView(window, fenetre);
+                }
 
-        sfRenderWindow_clear(window, sfBlack);
+            }
+            else if(event.type == sfEvtMouseButtonPressed){
+                sfFloatRect cord = sfRectangleShape_getLocalBounds(rect);
+                sfVector2i m = sfMouse_getPositionRenderWindow(window);
+                if(sfFloatRect_contains(&cord, m.x, m.y) == sfTrue){
+                    tmp.x = LARGEUR/2 - 100;
+                    tmp.y = LONGUEUR/2 - 100;
+                    sfView_setCenter(fenetre, tmp);
+                    tmp.x = alpha*LARGEUR;
+                    tmp.y = alpha*LONGUEUR;
+                    sfView_setSize(fenetre, tmp);
+                    sfRenderWindow_setView(window, fenetre);
+                }
+                else{
+                    mousePressed = 1;
+                }
+            }
+            else if(event.type == sfEvtMouseButtonReleased){
+                mousePressed = 0;
+            }
+            else if(event.type == sfEvtMouseMoved && mousePressed){
+                sfVector2i move = sfMouse_getPositionRenderWindow(window);
+                sfVector2f m = {.x = currentMouseCord.x - move.x, .y = currentMouseCord.y - move.y};
+                // printf("%lf, %lf\n", m.x, m.y);
+                sfView_move(fenetre, m);
+                sfRenderWindow_setView(window, fenetre);
+            }
+            
+        }
+        currentMouseCord = sfMouse_getPositionRenderWindow(window);
+
+        sfRenderWindow_setView(window, fenetre);
+        sfRenderWindow_clear(window, sfWhite);
         dessiner_stations(l, window);
+        sfRenderWindow_setView(window, sfRenderWindow_getDefaultView(window));
+        sfRenderWindow_drawRectangleShape(window, rect, NULL);
         sfRenderWindow_display(window);
     }
 
@@ -58,11 +113,14 @@ void dessiner_stations(Un_elem *liste, sfRenderWindow *window){
         // sfVector2f pos = sfCircleShape_getPosition(liste->truc->data.sta.point);
         // printf("x = %f, y = %f\n", pos.x, pos.y);
         sfRenderWindow_drawCircleShape(window, liste->truc->data.sta.point, NULL);
+        sfRenderWindow_drawText(window, liste->truc->data.sta.nom_shape, NULL);
         liste = liste->suiv;
     }
 }
 
 void mettre_a_jour_les_cercles(Un_elem *l){
+    if(l == NULL) return;
+    sfFont *font = sfFont_createFromFile("Poppins-Regular.ttf");
     Une_coord se, no;
     limites_zone(l, &no, &se);
     float lat_dis = se.lat - no.lat;
@@ -74,6 +132,11 @@ void mettre_a_jour_les_cercles(Un_elem *l){
         pos.x *= 0.98;
         pos.y *= 0.98;
         sfCircleShape_setPosition(l->truc->data.sta.point, pos);
+        pos.x -= strlen(l->truc->data.sta.nom);
+        pos.y -= 8;
+        sfText_setPosition(l->truc->data.sta.nom_shape, pos);
+        sfText_setFont(l->truc->data.sta.nom_shape, font);
+        sfText_setCharacterSize(l->truc->data.sta.nom_shape, 7);
         l = l->suiv;
     }
 }
