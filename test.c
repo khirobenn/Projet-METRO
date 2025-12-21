@@ -14,13 +14,19 @@
 #define LONGUEUR 1000
 
 void dessiner_stations(Un_elem *liste, sfRenderWindow *window);
-void mettre_a_jour_les_cercles(Un_elem *l);
+void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no);
 
 int main(int argc, char **argv){
     Un_elem *l = lire_stations(argv[1]);
-    mettre_a_jour_les_cercles(l);
-    ecrire_liste(NULL, l);
     Un_noeud *aqr = construire_aqr(l);
+    print_aqr(aqr);
+    Une_coord no, se;
+    limites_zone(l, &no, &se);
+    Une_coord limite_no = {.lat = 48.9, .lon = 2.5};
+    Une_coord limite_se = {.lat = 49, .lon = 2.3};
+    Un_elem *petit_carre = chercher_zone(aqr, NULL, limite_se, limite_no);
+    mettre_a_jour_les_cercles(petit_carre, se, no);
+    ecrire_liste(NULL, petit_carre);
 
     
     sfVideoMode mode = {LARGEUR, LONGUEUR, 32};
@@ -96,7 +102,7 @@ int main(int argc, char **argv){
 
         sfRenderWindow_setView(window, fenetre);
         sfRenderWindow_clear(window, sfWhite);
-        dessiner_stations(l, window);
+        dessiner_stations(petit_carre, window);
         sfRenderWindow_setView(window, sfRenderWindow_getDefaultView(window));
         sfRenderWindow_drawRectangleShape(window, rect, NULL);
         sfRenderWindow_display(window);
@@ -118,11 +124,9 @@ void dessiner_stations(Un_elem *liste, sfRenderWindow *window){
     }
 }
 
-void mettre_a_jour_les_cercles(Un_elem *l){
+void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no){
     if(l == NULL) return;
     sfFont *font = sfFont_createFromFile("Poppins-Regular.ttf");
-    Une_coord se, no;
-    limites_zone(l, &no, &se);
     float lat_dis = se.lat - no.lat;
     float lon_dis = no.lon - se.lon;
     while(l != NULL){
