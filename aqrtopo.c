@@ -90,7 +90,7 @@ int point_est_dans_carre(Une_coord point, Une_coord x, Une_coord y){
     return 0;
 }
 
-// Si le carré 1 est dans le carré 2
+// Si le carré 1 est dans le carré 2 ou le contraire
 int chevauche_carres(Une_coord x1, Une_coord y1,Une_coord x2, Une_coord y2){
     Une_coord z1 = {.lat = x1.lat, .lon = y1.lon};
     Une_coord d1 = {.lat = y1.lat, .lon = x1.lon};
