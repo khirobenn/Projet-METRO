@@ -11,7 +11,10 @@
 #include <string.h>
 
 #define LARGEUR 1800
-#define LONGUEUR 1000
+#define LONGUEUR 900
+#define STEP 0.001
+#define ZOOM_STEP 0.01
+#define SIZE_BETWEEN 0.05
 
 void dessiner_stations(Un_elem *liste, sfRenderWindow *window);
 void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no);
@@ -19,30 +22,24 @@ void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no);
 int main(int argc, char **argv){
     Un_elem *l = lire_stations(argv[1]);
     Un_noeud *aqr = construire_aqr(l);
-    print_aqr(aqr);
-    Une_coord no, se;
-    limites_zone(l, &no, &se);
-    Une_coord limite_no = {.lat = 48.9, .lon = 2.5};
-    Une_coord limite_se = {.lat = 49, .lon = 2.3};
-    Un_elem *petit_carre = chercher_zone(aqr, NULL, limite_se, limite_no);
+    // print_aqr(aqr);
+    Une_coord no = {.lat = 48.8, .lon = 2.2}, se = {.lat = no.lat + SIZE_BETWEEN*2, .lon = no.lon - SIZE_BETWEEN};
+
+    Un_elem *petit_carre = chercher_zone(aqr, NULL, se, no);
     mettre_a_jour_les_cercles(petit_carre, se, no);
     ecrire_liste(NULL, petit_carre);
 
     
     sfVideoMode mode = {LARGEUR, LONGUEUR, 32};
     sfRenderWindow *window = sfRenderWindow_create(mode, "MAP", sfResize | sfClose, NULL);
-    sfView *fenetre = sfView_create();
     
     int mousePressed = 0;
     sfVector2i currentMouseCord = sfMouse_getPositionRenderWindow(window);
 
     sfVector2f tmp = {.x = LARGEUR/2 - 100, .y = LONGUEUR/2 - 100};
-    sfView_setCenter(fenetre, tmp);
     float alpha = 0.2;
     tmp.x = alpha*LARGEUR;
     tmp.y = alpha*LONGUEUR;
-    sfView_setSize(fenetre, tmp);
-    sfRenderWindow_setView(window, fenetre);
     
     tmp.x = 40;
     tmp.y = 40;
@@ -61,12 +58,20 @@ int main(int argc, char **argv){
             }
             else if(event.type == sfEvtMouseWheelScrolled){
                 if (event.mouseWheelScroll.delta >= 0){
-                    sfView_zoom(fenetre, 0.95f);
-                    sfRenderWindow_setView(window, fenetre);
+                    if(no.lon - se.lon <= 1 && se.lat - no.lat <= 0.3){
+                        se.lat += ZOOM_STEP;
+                        no.lat -= ZOOM_STEP;
+                        se.lon -= ZOOM_STEP;
+                        no.lon += ZOOM_STEP;
+                    }
                 }
                 else{
-                    sfView_zoom(fenetre, 1.05f);
-                    sfRenderWindow_setView(window, fenetre);
+                    if(no.lon - se.lon >= SIZE_BETWEEN && se.lat - no.lat >= SIZE_BETWEEN * 2){
+                        se.lat -= ZOOM_STEP;
+                        no.lat += ZOOM_STEP;
+                        se.lon += ZOOM_STEP;
+                        no.lon -= ZOOM_STEP;
+                    }
                 }
 
             }
@@ -76,11 +81,11 @@ int main(int argc, char **argv){
                 if(sfFloatRect_contains(&cord, m.x, m.y) == sfTrue){
                     tmp.x = LARGEUR/2 - 100;
                     tmp.y = LONGUEUR/2 - 100;
-                    sfView_setCenter(fenetre, tmp);
+                    // sfView_setCenter(fenetre, tmp);
                     tmp.x = alpha*LARGEUR;
                     tmp.y = alpha*LONGUEUR;
-                    sfView_setSize(fenetre, tmp);
-                    sfRenderWindow_setView(window, fenetre);
+                    // sfView_setSize(fenetre, tmp);
+                    // sfRenderWindow_setView(window, fenetre);
                 }
                 else{
                     mousePressed = 1;
@@ -93,14 +98,37 @@ int main(int argc, char **argv){
                 sfVector2i move = sfMouse_getPositionRenderWindow(window);
                 sfVector2f m = {.x = currentMouseCord.x - move.x, .y = currentMouseCord.y - move.y};
                 // printf("%lf, %lf\n", m.x, m.y);
-                sfView_move(fenetre, m);
-                sfRenderWindow_setView(window, fenetre);
+                if(m.x > 0){
+                    se.lat += STEP;
+                    no.lat += STEP;
+                }
+                else if(m.x < 0){
+                    se.lat -= STEP;
+                    no.lat -= STEP;
+                }
+
+                if(m.y < 0){
+                    se.lon += STEP;
+                    no.lon += STEP;
+                }
+                else if(m.y > 0){
+                    se.lon -= STEP;
+                    no.lon -= STEP;
+                }
+                // sfView_move(fenetre, m);
+                // sfRenderWindow_setView(window, fenetre);  
             }
+
+            detruire_liste(petit_carre);
+            petit_carre = chercher_zone(aqr, NULL, se, no);
+            mettre_a_jour_les_cercles(petit_carre, se, no);
+            printf("\n");
+            ecrire_liste(NULL, petit_carre);
             
         }
         currentMouseCord = sfMouse_getPositionRenderWindow(window);
 
-        sfRenderWindow_setView(window, fenetre);
+        // sfRenderWindow_setView(window, fenetre);
         sfRenderWindow_clear(window, sfWhite);
         dessiner_stations(petit_carre, window);
         sfRenderWindow_setView(window, sfRenderWindow_getDefaultView(window));
@@ -133,6 +161,7 @@ void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no){
         sfVector2f pos = {.x = ((l->truc->coord.lat - no.lat) / lat_dis) * LARGEUR,
                           .y = (1 - (l->truc->coord.lon - se.lon) / lon_dis) * LONGUEUR
                         };
+        printf("%lf, %lf\n", pos.x, pos.y);
         pos.x *= 0.98;
         pos.y *= 0.98;
         sfCircleShape_setPosition(l->truc->data.sta.point, pos);
@@ -140,7 +169,7 @@ void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no){
         pos.y -= 8;
         sfText_setPosition(l->truc->data.sta.nom_shape, pos);
         sfText_setFont(l->truc->data.sta.nom_shape, font);
-        sfText_setCharacterSize(l->truc->data.sta.nom_shape, 7);
+        sfText_setCharacterSize(l->truc->data.sta.nom_shape, 8);
         l = l->suiv;
     }
 }
