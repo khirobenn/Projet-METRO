@@ -9,6 +9,7 @@
 #include "station.h"
 #include "truc.h"
 #include <string.h>
+#include <math.h>
 
 #define LARGEUR 1800
 #define LONGUEUR 900
@@ -16,19 +17,32 @@
 #define ZOOM_STEP 0.01
 #define SIZE_BETWEEN 0.05
 
+#define PI 3.14159265358979323846
+
 void dessiner_stations(Un_elem *liste, sfRenderWindow *window);
 void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no);
+void dessiner_lignes(Un_elem *l, sfRenderWindow *window, Une_coord se, Une_coord no);
+int conversion_hex_vers_decimal(char *depart);
 
 int main(int argc, char **argv){
     Un_elem *l = lire_stations(argv[1]);
     Un_noeud *aqr = construire_aqr(l);
+    Un_nabr *abr = construire_abr(l);
+
+    Une_ligne *lignes = lire_lignes(argv[2]);
+
+
+    Un_elem *test = lire_connexions(argv[3], lignes, abr);
+
+    if(test != NULL){
+        printf("OKKK!!\n");
+    }
+
     // print_aqr(aqr);
-    Une_coord no = {.lat = 48.8, .lon = 2.2}, se = {.lat = no.lat + SIZE_BETWEEN*2, .lon = no.lon - SIZE_BETWEEN};
+    Une_coord no = {.lat = 48.8, .lon = 2.3}, se = {.lat = no.lat + SIZE_BETWEEN*2, .lon = no.lon - SIZE_BETWEEN};
 
     Un_elem *petit_carre = chercher_zone(aqr, NULL, se, no);
     mettre_a_jour_les_cercles(petit_carre, se, no);
-    ecrire_liste(NULL, petit_carre);
-
     
     sfVideoMode mode = {LARGEUR, LONGUEUR, 32};
     sfRenderWindow *window = sfRenderWindow_create(mode, "MAP", sfResize | sfClose, NULL);
@@ -36,20 +50,6 @@ int main(int argc, char **argv){
     int mousePressed = 0;
     sfVector2i currentMouseCord = sfMouse_getPositionRenderWindow(window);
 
-    sfVector2f tmp = {.x = LARGEUR/2 - 100, .y = LONGUEUR/2 - 100};
-    float alpha = 0.2;
-    tmp.x = alpha*LARGEUR;
-    tmp.y = alpha*LONGUEUR;
-    
-    tmp.x = 40;
-    tmp.y = 40;
-    
-    sfRectangleShape *rect = sfRectangleShape_create();
-    sfRectangleShape_setSize(rect, tmp);
-    tmp.x = LARGEUR - tmp.x - 20;
-    tmp.y = LONGUEUR - tmp.y - 20;
-    sfRectangleShape_setPosition(rect, tmp);
-    sfRectangleShape_setFillColor(rect, sfBlack);
     while (sfRenderWindow_isOpen(window)) {
         sfEvent event;
         while (sfRenderWindow_pollEvent(window, &event)) {
@@ -76,20 +76,7 @@ int main(int argc, char **argv){
 
             }
             else if(event.type == sfEvtMouseButtonPressed){
-                sfFloatRect cord = sfRectangleShape_getLocalBounds(rect);
-                sfVector2i m = sfMouse_getPositionRenderWindow(window);
-                if(sfFloatRect_contains(&cord, m.x, m.y) == sfTrue){
-                    tmp.x = LARGEUR/2 - 100;
-                    tmp.y = LONGUEUR/2 - 100;
-                    // sfView_setCenter(fenetre, tmp);
-                    tmp.x = alpha*LARGEUR;
-                    tmp.y = alpha*LONGUEUR;
-                    // sfView_setSize(fenetre, tmp);
-                    // sfRenderWindow_setView(window, fenetre);
-                }
-                else{
-                    mousePressed = 1;
-                }
+                mousePressed = 1;
             }
             else if(event.type == sfEvtMouseButtonReleased){
                 mousePressed = 0;
@@ -122,21 +109,22 @@ int main(int argc, char **argv){
             detruire_liste(petit_carre);
             petit_carre = chercher_zone(aqr, NULL, se, no);
             mettre_a_jour_les_cercles(petit_carre, se, no);
-            printf("\n");
-            ecrire_liste(NULL, petit_carre);
-            
         }
         currentMouseCord = sfMouse_getPositionRenderWindow(window);
 
         // sfRenderWindow_setView(window, fenetre);
         sfRenderWindow_clear(window, sfWhite);
+        dessiner_lignes(test, window, se, no);
         dessiner_stations(petit_carre, window);
         sfRenderWindow_setView(window, sfRenderWindow_getDefaultView(window));
-        sfRenderWindow_drawRectangleShape(window, rect, NULL);
         sfRenderWindow_display(window);
     }
 
+    detruire_liste(petit_carre);
+    detruire_abr(abr);
+    detruire_lignes(lignes);
     detruire_aqr(aqr);
+    detruire_liste(test);
     detruire_liste_et_truc(l);
     sfRenderWindow_destroy(window);
     return 0;
@@ -152,6 +140,53 @@ void dessiner_stations(Un_elem *liste, sfRenderWindow *window){
     }
 }
 
+void dessiner_lignes(Un_elem *l, sfRenderWindow *window, Une_coord se, Une_coord no){
+    float lat_dis = se.lat - no.lat;
+    float lon_dis = no.lon - se.lon;
+
+    while(l != NULL){
+        Une_coord station1 = l->truc->data.con.sta_dep->coord;
+        Une_coord station2 = l->truc->data.con.sta_arr->coord;
+
+
+        sfVector2f pos1 = {.x = ((station1.lat - no.lat) / lat_dis) * LARGEUR,
+                          .y = (1 - (station1.lon - se.lon) / lon_dis) * LONGUEUR
+                        };
+
+        sfVector2f pos2 = {.x = ((station2.lat - no.lat) / lat_dis) * LARGEUR,
+                          .y = (1 - (station2.lon - se.lon) / lon_dis) * LONGUEUR
+                        };
+
+        double x = fabs(pos1.x - pos2.x);
+        double y = fabs(pos1.y - pos2.y);
+
+        double dis = sqrt(x*x + y*y);
+ 
+        sfVector2f size = {.x = dis, .y = 4};
+        sfRectangleShape_setSize(l->truc->data.con.ligne_dessin, size);
+        char *color = l->truc->data.con.ligne->color;
+
+        sfColor colorFill = {.r = conversion_hex_vers_decimal(color+1), .g = conversion_hex_vers_decimal(color+3), .b = conversion_hex_vers_decimal(color+5), .a = conversion_hex_vers_decimal(color+7)};
+        sfRectangleShape_setFillColor(l->truc->data.con.ligne_dessin, colorFill);
+        sfRectangleShape_setPosition(l->truc->data.con.ligne_dessin, pos1);
+
+        double teta = atan(y/x) * 180.0 / PI;
+
+        if(station2.lat > station1.lat && station2.lon > station1.lon){
+            teta = -teta;
+        }
+        else if(station2.lat < station1.lat && station2.lon < station1.lon){
+            teta = 180 - teta;
+        }
+        else if(station2.lat < station1.lat && station2.lon > station1.lon){
+            teta -= 180;
+        }
+        sfRectangleShape_setRotation(l->truc->data.con.ligne_dessin, teta);
+        sfRenderWindow_drawRectangleShape(window, l->truc->data.con.ligne_dessin, NULL);
+        l = l->suiv;
+    }
+}
+
 void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no){
     if(l == NULL) return;
     sfFont *font = sfFont_createFromFile("Poppins-Regular.ttf");
@@ -161,9 +196,6 @@ void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no){
         sfVector2f pos = {.x = ((l->truc->coord.lat - no.lat) / lat_dis) * LARGEUR,
                           .y = (1 - (l->truc->coord.lon - se.lon) / lon_dis) * LONGUEUR
                         };
-        printf("%lf, %lf\n", pos.x, pos.y);
-        pos.x *= 0.98;
-        pos.y *= 0.98;
         sfCircleShape_setPosition(l->truc->data.sta.point, pos);
         pos.x -= strlen(l->truc->data.sta.nom);
         pos.y -= 8;
@@ -172,4 +204,42 @@ void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no){
         sfText_setCharacterSize(l->truc->data.sta.nom_shape, 8);
         l = l->suiv;
     }
+}
+
+int conversion_hex_vers_decimal(char *depart){
+    int dec = 0;
+    for (int i = 0; i<2; i++){
+        switch(depart[0]){
+            case 'A':
+            case 'a':
+                dec = dec*16 + 10;
+                break;
+            case 'B':
+            case 'b':
+                dec = dec*16 + 11;
+                break;
+            case 'C':
+            case 'c':
+                dec = dec*16 + 12;
+                break;
+            case 'D':
+            case 'd':
+                dec = dec*16 + 13;
+                break;
+            case 'E':
+            case 'e':
+                dec = dec*16 + 14;
+                break;
+            case 'F':
+            case 'f':
+                dec = dec*16 + 15;
+                break;
+            default:
+                dec = dec*16 + (depart[0] - '0');
+        }
+
+        depart++;
+    }
+
+    return dec;
 }

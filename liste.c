@@ -142,6 +142,7 @@ Un_elem *lire_connexions(char *nom_fichier, Une_ligne *liste_ligne, Un_nabr *abr
                     Une_coord cord = {.lat = .0, .lon = .0};
     
                     Un_truc *truc = creer_truc(cord, CON, data, duree);
+                    truc->data.con.ligne_dessin = sfRectangleShape_create();
                     connexion = inserer_deb_liste(connexion, truc);
                     printf("> Connexion ajouté avec succés.\n\n");
                 }

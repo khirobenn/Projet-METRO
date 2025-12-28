@@ -27,5 +27,8 @@ void detruire_truc(Un_truc *truc){
         sfText_destroy(truc->data.sta.nom_shape);
         if(truc->data.sta.tab_con != NULL) free(truc->data.sta.tab_con);
     }
+    else{
+        sfRectangleShape_destroy(truc->data.con.ligne_dessin);
+    }
     free(truc);
 }

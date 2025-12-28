@@ -6,7 +6,7 @@ OBJ = $(SRC:.c=.o)
 BIN = maker
 
 all: $(OBJ)
-	$(CC) $(CFLAGS) $^ $(SFMLFLAG) -o test
+	$(CC) $(CFLAGS) $^ $(SFMLFLAG) -lm -o test
 %.o: %.c
 	$(CC) -c $<
 
