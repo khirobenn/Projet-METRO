@@ -20,7 +20,7 @@
 
 #define PI 3.14159265358979323846
 
-void dessiner_tout(Une_coord no, Une_coord se, Un_elem *petit_carre, Un_noeud *aqr, Un_elem *test);
+void dessiner_tout(Une_coord no, Une_coord se, Un_elem **petit_carre, Un_noeud *aqr, Un_elem *liste_des_connexions);
 void dessiner_stations(Un_elem *liste, sfRenderWindow *window);
 void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no);
 void dessiner_lignes(Un_elem *l, sfRenderWindow *window, Une_coord se, Une_coord no);
@@ -33,10 +33,10 @@ int main(int argc, char **argv){
 
     Une_ligne *lignes = lire_lignes(argv[2]);
 
-    Un_elem *test = lire_connexions(argv[3], lignes, abr);
+    Un_elem *liste_des_connexions = lire_connexions(argv[3], lignes, abr);
 
     // print_aqr(aqr);
-    Une_coord no = {.lat = 48.8, .lon = 2.3}, se = {.lat = no.lat + SIZE_BETWEEN*2, .lon = no.lon - SIZE_BETWEEN};
+    Une_coord no = {.lat = 48.75, .lon = 2.4}, se = {.lat = no.lat + SIZE_BETWEEN*4, .lon = no.lon - 2*SIZE_BETWEEN};
 
     Un_elem *petit_carre = chercher_zone(aqr, NULL, se, no);
     mettre_a_jour_les_cercles(petit_carre, se, no);
@@ -45,11 +45,18 @@ int main(int argc, char **argv){
 
     do{
         choix = menu();
-        if(choix == 2){
+        if(choix == 1){
+            no.lat = 48.75;
+            no.lon = 2.4;
+            se.lat = no.lat + SIZE_BETWEEN*4;
+            se.lon = no.lon - SIZE_BETWEEN*2;
+            dessiner_tout(no, se, &petit_carre, aqr, liste_des_connexions);
+        }
+        else if(choix == 2){
             printf("\33[2J");
             printf("\33[H");
             printf("Entrez le nom de la station que vous cherchez : ");
-            // curs_set(1);
+            // Pour remettre le cursor
             printf("\33[?25h");
             char nom[200];
             scanf(" %[^\n]", nom);
@@ -64,14 +71,10 @@ int main(int argc, char **argv){
 
                 no.lon = station_recherche->coord.lon + SIZE_BETWEEN/2;
                 se.lon = station_recherche->coord.lon - SIZE_BETWEEN/2;
-                choix = 1;
+                dessiner_tout(no, se, &petit_carre, aqr, liste_des_connexions);  
             }
-            station_recherche = NULL;
         }
 
-        if(choix == 1){
-            dessiner_tout(no, se, petit_carre, aqr, test);
-        }
     }while(choix != NB);
 
 
@@ -79,7 +82,7 @@ int main(int argc, char **argv){
     detruire_abr(abr);
     detruire_lignes(lignes);
     detruire_aqr(aqr);
-    detruire_liste(test);
+    detruire_liste(liste_des_connexions);
     detruire_liste_et_truc(l);
 
     printf("\33[2J");
@@ -90,7 +93,7 @@ int main(int argc, char **argv){
 }
 
 
-void dessiner_tout(Une_coord no, Une_coord se, Un_elem *petit_carre, Un_noeud *aqr, Un_elem *test){
+void dessiner_tout(Une_coord no, Une_coord se, Un_elem **petit_carre, Un_noeud *aqr, Un_elem *liste_des_connexions){
     sfVideoMode mode = {LARGEUR, LONGUEUR, 32};
 
     sfRenderWindow *window = sfRenderWindow_create(mode, "MAP", sfResize | sfClose, NULL);
@@ -148,15 +151,15 @@ void dessiner_tout(Une_coord no, Une_coord se, Un_elem *petit_carre, Un_noeud *a
                 } 
             }
 
-            detruire_liste(petit_carre);
-            petit_carre = chercher_zone(aqr, NULL, se, no);
-            mettre_a_jour_les_cercles(petit_carre, se, no);
+            detruire_liste(*petit_carre);
+            *petit_carre = chercher_zone(aqr, NULL, se, no);
+            mettre_a_jour_les_cercles(*petit_carre, se, no);
         }
         currentMouseCord = sfMouse_getPositionRenderWindow(window);
 
         sfRenderWindow_clear(window, sfWhite);
-        dessiner_lignes(test, window, se, no);
-        dessiner_stations(petit_carre, window);
+        dessiner_lignes(liste_des_connexions, window, se, no);
+        dessiner_stations(*petit_carre, window);
         sfRenderWindow_setView(window, sfRenderWindow_getDefaultView(window));
         sfRenderWindow_display(window);
     }
