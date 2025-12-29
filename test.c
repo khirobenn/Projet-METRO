@@ -10,6 +10,7 @@
 #include "truc.h"
 #include <string.h>
 #include <math.h>
+#include "menu.h"
 
 #define LARGEUR 1800
 #define LONGUEUR 900
@@ -45,80 +46,111 @@ int main(int argc, char **argv){
     mettre_a_jour_les_cercles(petit_carre, se, no);
     
     sfVideoMode mode = {LARGEUR, LONGUEUR, 32};
-    sfRenderWindow *window = sfRenderWindow_create(mode, "MAP", sfResize | sfClose, NULL);
-    
-    int mousePressed = 0;
-    sfVector2i currentMouseCord = sfMouse_getPositionRenderWindow(window);
 
-    while (sfRenderWindow_isOpen(window)) {
-        sfEvent event;
-        while (sfRenderWindow_pollEvent(window, &event)) {
-            if (event.type == sfEvtClosed) {
-                sfRenderWindow_close(window);
-            }
-            else if(event.type == sfEvtMouseWheelScrolled){
-                if (event.mouseWheelScroll.delta >= 0){
-                    if(no.lon - se.lon <= 1 && se.lat - no.lat <= 0.3){
-                        se.lat += ZOOM_STEP;
-                        no.lat -= ZOOM_STEP;
-                        se.lon -= ZOOM_STEP;
-                        no.lon += ZOOM_STEP;
-                    }
-                }
-                else{
-                    if(no.lon - se.lon >= SIZE_BETWEEN && se.lat - no.lat >= SIZE_BETWEEN * 2){
-                        se.lat -= ZOOM_STEP;
-                        no.lat += ZOOM_STEP;
-                        se.lon += ZOOM_STEP;
-                        no.lon -= ZOOM_STEP;
-                    }
-                }
+    int choix = -1;
 
-            }
-            else if(event.type == sfEvtMouseButtonPressed){
-                mousePressed = 1;
-            }
-            else if(event.type == sfEvtMouseButtonReleased){
-                mousePressed = 0;
-            }
-            else if(event.type == sfEvtMouseMoved && mousePressed){
-                sfVector2i move = sfMouse_getPositionRenderWindow(window);
-                sfVector2f m = {.x = currentMouseCord.x - move.x, .y = currentMouseCord.y - move.y};
-                // printf("%lf, %lf\n", m.x, m.y);
-                if(m.x > 0){
-                    se.lat += STEP;
-                    no.lat += STEP;
-                }
-                else if(m.x < 0){
-                    se.lat -= STEP;
-                    no.lat -= STEP;
-                }
+    do{
+        choix = menu();
+        if(choix == 2){
+            printf("\33[2J");
+            printf("\33[H");
+            printf("Entrez le nom de la station que vous cherchez : ");
+            // curs_set(1);
+            printf("\33[?25h");
+            char nom[200];
+            scanf(" %[^\n]", nom);
+            refresh();
+            fflush(stdout);
 
-                if(m.y < 0){
-                    se.lon += STEP;
-                    no.lon += STEP;
-                }
-                else if(m.y > 0){
-                    se.lon -= STEP;
-                    no.lon -= STEP;
-                }
-                // sfView_move(fenetre, m);
-                // sfRenderWindow_setView(window, fenetre);  
-            }
+            Un_truc *station_recherche = chercher_station(abr, nom);
+            if(station_recherche != NULL){
+                printf("Station trouvée !!\33[1E");
+                no.lat = station_recherche->coord.lat - SIZE_BETWEEN;
+                se.lat = station_recherche->coord.lat + SIZE_BETWEEN;
 
-            detruire_liste(petit_carre);
-            petit_carre = chercher_zone(aqr, NULL, se, no);
-            mettre_a_jour_les_cercles(petit_carre, se, no);
+                no.lon = station_recherche->coord.lon + SIZE_BETWEEN/2;
+                se.lon = station_recherche->coord.lon - SIZE_BETWEEN/2;
+                choix = 1;
+            }
+            station_recherche = NULL;
         }
-        currentMouseCord = sfMouse_getPositionRenderWindow(window);
 
-        // sfRenderWindow_setView(window, fenetre);
-        sfRenderWindow_clear(window, sfWhite);
-        dessiner_lignes(test, window, se, no);
-        dessiner_stations(petit_carre, window);
-        sfRenderWindow_setView(window, sfRenderWindow_getDefaultView(window));
-        sfRenderWindow_display(window);
-    }
+        if(choix == 1){
+            sfRenderWindow *window = sfRenderWindow_create(mode, "MAP", sfResize | sfClose, NULL);
+            int mousePressed = 0;
+            sfVector2i currentMouseCord = sfMouse_getPositionRenderWindow(window);
+            while (sfRenderWindow_isOpen(window)) {
+                sfEvent event;
+                while (sfRenderWindow_pollEvent(window, &event)) {
+                    if (event.type == sfEvtClosed) {
+                        sfRenderWindow_close(window);
+                    }
+                    else if(event.type == sfEvtMouseWheelScrolled){
+                        if (event.mouseWheelScroll.delta >= 0){
+                            if(no.lon - se.lon <= 1 && se.lat - no.lat <= 0.3){
+                                se.lat += ZOOM_STEP;
+                                no.lat -= ZOOM_STEP;
+                                se.lon -= ZOOM_STEP;
+                                no.lon += ZOOM_STEP;
+                            }
+                        }
+                        else{
+                            if(no.lon - se.lon >= SIZE_BETWEEN && se.lat - no.lat >= SIZE_BETWEEN * 2){
+                                se.lat -= ZOOM_STEP;
+                                no.lat += ZOOM_STEP;
+                                se.lon += ZOOM_STEP;
+                                no.lon -= ZOOM_STEP;
+                            }
+                        }
+                    }
+                    else if(event.type == sfEvtMouseButtonPressed){
+                        mousePressed = 1;
+                    }
+                    else if(event.type == sfEvtMouseButtonReleased){
+                        mousePressed = 0;
+                    }
+                    else if(event.type == sfEvtMouseMoved && mousePressed){
+                        sfVector2i move = sfMouse_getPositionRenderWindow(window);
+                        sfVector2f m = {.x = currentMouseCord.x - move.x, .y = currentMouseCord.y - move.y};
+                        // printf("%lf, %lf\n", m.x, m.y);
+                        if(m.x > 0){
+                            se.lat += STEP;
+                            no.lat += STEP;
+                        }
+                        else if(m.x < 0){
+                            se.lat -= STEP;
+                            no.lat -= STEP;
+                        }
+        
+                        if(m.y < 0){
+                            se.lon += STEP;
+                            no.lon += STEP;
+                        }
+                        else if(m.y > 0){
+                            se.lon -= STEP;
+                            no.lon -= STEP;
+                        }
+                        // sfView_move(fenetre, m);
+                        // sfRenderWindow_setView(window, fenetre);  
+                    }
+        
+                    detruire_liste(petit_carre);
+                    petit_carre = chercher_zone(aqr, NULL, se, no);
+                    mettre_a_jour_les_cercles(petit_carre, se, no);
+                }
+                currentMouseCord = sfMouse_getPositionRenderWindow(window);
+        
+                // sfRenderWindow_setView(window, fenetre);
+                sfRenderWindow_clear(window, sfWhite);
+                dessiner_lignes(test, window, se, no);
+                dessiner_stations(petit_carre, window);
+                sfRenderWindow_setView(window, sfRenderWindow_getDefaultView(window));
+                sfRenderWindow_display(window);
+            }
+            sfRenderWindow_destroy(window);
+        }
+    }while(choix != NB);
+
 
     detruire_liste(petit_carre);
     detruire_abr(abr);
@@ -126,7 +158,11 @@ int main(int argc, char **argv){
     detruire_aqr(aqr);
     detruire_liste(test);
     detruire_liste_et_truc(l);
-    sfRenderWindow_destroy(window);
+
+    printf("\33[2J");
+    printf("\33[H");
+    printf("\33[?25h");
+
     return 0;
 }
 
@@ -162,7 +198,7 @@ void dessiner_lignes(Un_elem *l, sfRenderWindow *window, Une_coord se, Une_coord
 
         double dis = sqrt(x*x + y*y);
  
-        sfVector2f size = {.x = dis, .y = 4};
+        sfVector2f size = {.x = dis, .y = 2};
         sfRectangleShape_setSize(l->truc->data.con.ligne_dessin, size);
         char *color = l->truc->data.con.ligne->color;
 
