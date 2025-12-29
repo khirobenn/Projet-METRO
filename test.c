@@ -20,6 +20,7 @@
 
 #define PI 3.14159265358979323846
 
+void dessiner_tout(Une_coord no, Une_coord se, Un_elem *petit_carre, Un_noeud *aqr, Un_elem *test);
 void dessiner_stations(Un_elem *liste, sfRenderWindow *window);
 void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no);
 void dessiner_lignes(Un_elem *l, sfRenderWindow *window, Une_coord se, Une_coord no);
@@ -32,12 +33,7 @@ int main(int argc, char **argv){
 
     Une_ligne *lignes = lire_lignes(argv[2]);
 
-
     Un_elem *test = lire_connexions(argv[3], lignes, abr);
-
-    if(test != NULL){
-        printf("OKKK!!\n");
-    }
 
     // print_aqr(aqr);
     Une_coord no = {.lat = 48.8, .lon = 2.3}, se = {.lat = no.lat + SIZE_BETWEEN*2, .lon = no.lon - SIZE_BETWEEN};
@@ -45,8 +41,6 @@ int main(int argc, char **argv){
     Un_elem *petit_carre = chercher_zone(aqr, NULL, se, no);
     mettre_a_jour_les_cercles(petit_carre, se, no);
     
-    sfVideoMode mode = {LARGEUR, LONGUEUR, 32};
-
     int choix = -1;
 
     do{
@@ -76,78 +70,7 @@ int main(int argc, char **argv){
         }
 
         if(choix == 1){
-            sfRenderWindow *window = sfRenderWindow_create(mode, "MAP", sfResize | sfClose, NULL);
-            int mousePressed = 0;
-            sfVector2i currentMouseCord = sfMouse_getPositionRenderWindow(window);
-            while (sfRenderWindow_isOpen(window)) {
-                sfEvent event;
-                while (sfRenderWindow_pollEvent(window, &event)) {
-                    if (event.type == sfEvtClosed) {
-                        sfRenderWindow_close(window);
-                    }
-                    else if(event.type == sfEvtMouseWheelScrolled){
-                        if (event.mouseWheelScroll.delta >= 0){
-                            if(no.lon - se.lon <= 1 && se.lat - no.lat <= 0.3){
-                                se.lat += ZOOM_STEP;
-                                no.lat -= ZOOM_STEP;
-                                se.lon -= ZOOM_STEP;
-                                no.lon += ZOOM_STEP;
-                            }
-                        }
-                        else{
-                            if(no.lon - se.lon >= SIZE_BETWEEN && se.lat - no.lat >= SIZE_BETWEEN * 2){
-                                se.lat -= ZOOM_STEP;
-                                no.lat += ZOOM_STEP;
-                                se.lon += ZOOM_STEP;
-                                no.lon -= ZOOM_STEP;
-                            }
-                        }
-                    }
-                    else if(event.type == sfEvtMouseButtonPressed){
-                        mousePressed = 1;
-                    }
-                    else if(event.type == sfEvtMouseButtonReleased){
-                        mousePressed = 0;
-                    }
-                    else if(event.type == sfEvtMouseMoved && mousePressed){
-                        sfVector2i move = sfMouse_getPositionRenderWindow(window);
-                        sfVector2f m = {.x = currentMouseCord.x - move.x, .y = currentMouseCord.y - move.y};
-                        // printf("%lf, %lf\n", m.x, m.y);
-                        if(m.x > 0){
-                            se.lat += STEP;
-                            no.lat += STEP;
-                        }
-                        else if(m.x < 0){
-                            se.lat -= STEP;
-                            no.lat -= STEP;
-                        }
-        
-                        if(m.y < 0){
-                            se.lon += STEP;
-                            no.lon += STEP;
-                        }
-                        else if(m.y > 0){
-                            se.lon -= STEP;
-                            no.lon -= STEP;
-                        }
-                        // sfView_move(fenetre, m);
-                        // sfRenderWindow_setView(window, fenetre);  
-                    }
-        
-                    detruire_liste(petit_carre);
-                    petit_carre = chercher_zone(aqr, NULL, se, no);
-                    mettre_a_jour_les_cercles(petit_carre, se, no);
-                }
-                currentMouseCord = sfMouse_getPositionRenderWindow(window);
-        
-                // sfRenderWindow_setView(window, fenetre);
-                sfRenderWindow_clear(window, sfWhite);
-                dessiner_lignes(test, window, se, no);
-                dessiner_stations(petit_carre, window);
-                sfRenderWindow_setView(window, sfRenderWindow_getDefaultView(window));
-                sfRenderWindow_display(window);
-            }
-            sfRenderWindow_destroy(window);
+            dessiner_tout(no, se, petit_carre, aqr, test);
         }
     }while(choix != NB);
 
@@ -166,10 +89,82 @@ int main(int argc, char **argv){
     return 0;
 }
 
+
+void dessiner_tout(Une_coord no, Une_coord se, Un_elem *petit_carre, Un_noeud *aqr, Un_elem *test){
+    sfVideoMode mode = {LARGEUR, LONGUEUR, 32};
+
+    sfRenderWindow *window = sfRenderWindow_create(mode, "MAP", sfResize | sfClose, NULL);
+    int mousePressed = 0;
+    sfVector2i currentMouseCord = sfMouse_getPositionRenderWindow(window);
+    while (sfRenderWindow_isOpen(window)) {
+        sfEvent event;
+        while (sfRenderWindow_pollEvent(window, &event)) {
+            if (event.type == sfEvtClosed) {
+                sfRenderWindow_close(window);
+            }
+            else if(event.type == sfEvtMouseWheelScrolled){
+                if (event.mouseWheelScroll.delta >= 0){
+                    if(no.lon - se.lon <= 1 && se.lat - no.lat <= 0.3){
+                        se.lat += ZOOM_STEP;
+                        no.lat -= ZOOM_STEP;
+                        se.lon -= ZOOM_STEP;
+                        no.lon += ZOOM_STEP;
+                    }
+                }
+                else{
+                    if(no.lon - se.lon >= SIZE_BETWEEN && se.lat - no.lat >= SIZE_BETWEEN * 2){
+                        se.lat -= ZOOM_STEP;
+                        no.lat += ZOOM_STEP;
+                        se.lon += ZOOM_STEP;
+                        no.lon -= ZOOM_STEP;
+                    }
+                }
+            }
+            else if(event.type == sfEvtMouseButtonPressed){
+                mousePressed = 1;
+            }
+            else if(event.type == sfEvtMouseButtonReleased){
+                mousePressed = 0;
+            }
+            else if(event.type == sfEvtMouseMoved && mousePressed){
+                sfVector2i move = sfMouse_getPositionRenderWindow(window);
+                sfVector2f m = {.x = currentMouseCord.x - move.x, .y = currentMouseCord.y - move.y};
+                if(m.x > 0){
+                    se.lat += STEP;
+                    no.lat += STEP;
+                }
+                else if(m.x < 0){
+                    se.lat -= STEP;
+                    no.lat -= STEP;
+                }
+
+                if(m.y < 0){
+                    se.lon += STEP;
+                    no.lon += STEP;
+                }
+                else if(m.y > 0){
+                    se.lon -= STEP;
+                    no.lon -= STEP;
+                } 
+            }
+
+            detruire_liste(petit_carre);
+            petit_carre = chercher_zone(aqr, NULL, se, no);
+            mettre_a_jour_les_cercles(petit_carre, se, no);
+        }
+        currentMouseCord = sfMouse_getPositionRenderWindow(window);
+
+        sfRenderWindow_clear(window, sfWhite);
+        dessiner_lignes(test, window, se, no);
+        dessiner_stations(petit_carre, window);
+        sfRenderWindow_setView(window, sfRenderWindow_getDefaultView(window));
+        sfRenderWindow_display(window);
+    }
+    sfRenderWindow_destroy(window);
+}
+
 void dessiner_stations(Un_elem *liste, sfRenderWindow *window){
     while(liste != NULL){
-        // sfVector2f pos = sfCircleShape_getPosition(liste->truc->data.sta.point);
-        // printf("x = %f, y = %f\n", pos.x, pos.y);
         sfRenderWindow_drawCircleShape(window, liste->truc->data.sta.point, NULL);
         sfRenderWindow_drawText(window, liste->truc->data.sta.nom_shape, NULL);
         liste = liste->suiv;
