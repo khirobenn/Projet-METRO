@@ -20,7 +20,7 @@
 
 #define PI 3.14159265358979323846
 
-void dessiner_tout(Une_coord no, Une_coord se, Un_elem **petit_carre, Un_noeud *aqr, Un_elem *liste_des_connexions);
+void dessiner_tout(Une_coord no, Une_coord se, Un_elem *liste, Un_noeud *aqr, Un_elem *liste_des_connexions);
 void dessiner_stations(Un_elem *liste, sfRenderWindow *window, Une_coord se, Une_coord no);
 void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no);
 void dessiner_lignes(Un_elem *l, sfRenderWindow *window, Une_coord se, Une_coord no);
@@ -36,22 +36,18 @@ int main(int argc, char **argv){
 
     Un_elem *liste_des_connexions = lire_connexions(argv[3], lignes, abr);
 
-    // print_aqr(aqr);
-    Une_coord no = {.lat = 48.75, .lon = 2.4}, se = {.lat = no.lat + SIZE_BETWEEN*4, .lon = no.lon - 2*SIZE_BETWEEN};
+    Une_coord no = {.lat = 48.87, .lon = 2.32}, se = {.lat = no.lat - SIZE_BETWEEN*2, .lon = no.lon + 4*SIZE_BETWEEN};
 
-    Un_elem *petit_carre = chercher_zone(aqr, NULL, se, no);
-    mettre_a_jour_les_cercles(petit_carre, se, no);
-    
+    mettre_a_jour_les_cercles(l, se, no);
     int choix = -1;
-
     do{
         choix = menu();
         if(choix == 1){
-            no.lat = 48.75;
-            no.lon = 2.4;
-            se.lat = no.lat + SIZE_BETWEEN*4;
-            se.lon = no.lon - SIZE_BETWEEN*2;
-            dessiner_tout(no, se, &petit_carre, aqr, liste_des_connexions);
+            no.lat = 48.87 + SIZE_BETWEEN;
+            no.lon = 2.32 + SIZE_BETWEEN*2;
+            se.lat = no.lat - SIZE_BETWEEN*2;
+            se.lon = no.lon + SIZE_BETWEEN*4;
+            dessiner_tout(no, se, l, aqr, liste_des_connexions);
         }
         else if(choix == 2){
             printf("\33[2J");
@@ -67,12 +63,12 @@ int main(int argc, char **argv){
             Un_truc *station_recherche = chercher_station(abr, nom);
             if(station_recherche != NULL){
                 printf("Station trouvée !!\33[1E");
-                no.lat = station_recherche->coord.lat - SIZE_BETWEEN;
-                se.lat = station_recherche->coord.lat + SIZE_BETWEEN;
+                no.lat = station_recherche->coord.lat + SIZE_BETWEEN/2;
+                se.lat = station_recherche->coord.lat - SIZE_BETWEEN/2;
 
-                no.lon = station_recherche->coord.lon + SIZE_BETWEEN/2;
-                se.lon = station_recherche->coord.lon - SIZE_BETWEEN/2;
-                dessiner_tout(no, se, &petit_carre, aqr, liste_des_connexions);  
+                no.lon = station_recherche->coord.lon - SIZE_BETWEEN;
+                se.lon = station_recherche->coord.lon + SIZE_BETWEEN;
+                dessiner_tout(no, se, l, aqr, liste_des_connexions);  
             }
             else{
                 printf("Veuillez saisir un nom de station valide !");
@@ -126,8 +122,6 @@ int main(int argc, char **argv){
                     printf("\33[1E");
 
                 }
-
-
                 detruire_liste(chemin);
             }
             
@@ -140,8 +134,6 @@ int main(int argc, char **argv){
 
     }while(choix != NB);
 
-
-    detruire_liste(petit_carre);
     detruire_abr(abr);
     detruire_lignes(lignes);
     detruire_aqr(aqr);
@@ -156,15 +148,14 @@ int main(int argc, char **argv){
 }
 
 
-void dessiner_tout(Une_coord no, Une_coord se, Un_elem **petit_carre, Un_noeud *aqr, Un_elem *liste_des_connexions){
+void dessiner_tout(Une_coord no, Une_coord se, Un_elem *liste, Un_noeud *aqr, Un_elem *liste_des_connexions){
     sfVideoMode mode = {LARGEUR, LONGUEUR, 32};
 
     sfRenderWindow *window = sfRenderWindow_create(mode, "MAP", sfResize | sfClose, NULL);
     int mousePressed = 0;
     sfVector2i currentMouseCord = sfMouse_getPositionRenderWindow(window);
     while (sfRenderWindow_isOpen(window)) {
-        printf("NO : lat = %lf ; lon = %lf\n", no.lat, no.lon);
-        printf("SE : lat = %lf ; lon = %lf\n", se.lat, se.lon);
+        printf("lon = %lf, lat = %lf\n", se.lon - no.lon, no.lat - se.lat);
         sfEvent event;
         while (sfRenderWindow_pollEvent(window, &event)) {
             if (event.type == sfEvtClosed) {
@@ -172,23 +163,23 @@ void dessiner_tout(Une_coord no, Une_coord se, Un_elem **petit_carre, Un_noeud *
             }
             else if(event.type == sfEvtMouseWheelScrolled){
                 if (event.mouseWheelScroll.delta >= 0){
-                    if(no.lon - se.lon <= 1 && se.lat - no.lat <= 0.3){
-                        se.lat += ZOOM_STEP;
-                        no.lat -= ZOOM_STEP;
-                        se.lon -= ZOOM_STEP;
-                        no.lon += ZOOM_STEP;
-                        detruire_liste(*petit_carre);
-                        *petit_carre = chercher_zone(aqr, NULL, se, no);
+                    if(no.lat - se.lat <= 0.3 && se.lon - no.lon <= 1){
+                        se.lon += ZOOM_STEP;
+                        no.lon -= ZOOM_STEP;
+                        se.lat -= ZOOM_STEP;
+                        no.lat += ZOOM_STEP;
+                        // detruire_liste(*petit_carre);
+                        // *petit_carre = chercher_zone(aqr, NULL, se, no);
                     }
                 }
                 else{
-                    if(no.lon - se.lon >= 0.065 && se.lat - no.lat >= 0.165){
-                        se.lat -= ZOOM_STEP;
-                        no.lat += ZOOM_STEP;
-                        se.lon += ZOOM_STEP;
-                        no.lon -= ZOOM_STEP;
-                        detruire_liste(*petit_carre);
-                        *petit_carre = chercher_zone(aqr, NULL, se, no);
+                    if(no.lat - se.lat >= 0.05 && se.lon - no.lon >= 0.15){
+                        se.lon -= ZOOM_STEP;
+                        no.lon += ZOOM_STEP;
+                        se.lat += ZOOM_STEP;
+                        no.lat -= ZOOM_STEP;
+                        // detruire_liste(*petit_carre);
+                        // *petit_carre = chercher_zone(aqr, NULL, se, no);
                     }
                 }
             }
@@ -202,32 +193,29 @@ void dessiner_tout(Une_coord no, Une_coord se, Un_elem **petit_carre, Un_noeud *
                 sfVector2i move = sfMouse_getPositionRenderWindow(window);
                 sfVector2f m = {.x = currentMouseCord.x - move.x, .y = currentMouseCord.y - move.y};
                 if(m.x > 0){
-                    se.lat += STEP;
-                    no.lat += STEP;
-                }
-                else if(m.x < 0){
-                    se.lat -= STEP;
-                    no.lat -= STEP;
-                }
-
-                if(m.y < 0){
                     se.lon += STEP;
                     no.lon += STEP;
                 }
-                else if(m.y > 0){
+                else if(m.x < 0){
                     se.lon -= STEP;
                     no.lon -= STEP;
+                }
+
+                if(m.y < 0){
+                    se.lat += STEP;
+                    no.lat += STEP;
+                }
+                else if(m.y > 0){
+                    se.lat -= STEP;
+                    no.lat -= STEP;
                 } 
-                detruire_liste(*petit_carre);
-                *petit_carre = chercher_zone(aqr, NULL, se, no);
             }
-            mettre_a_jour_les_cercles(*petit_carre, se, no);
+            mettre_a_jour_les_cercles(liste, se, no);
         }
         currentMouseCord = sfMouse_getPositionRenderWindow(window);
-
         sfRenderWindow_clear(window, sfWhite);
         dessiner_lignes(liste_des_connexions, window, se, no);
-        dessiner_stations(*petit_carre, window, se, no);
+        dessiner_stations(liste, window, se, no);
         sfRenderWindow_setView(window, sfRenderWindow_getDefaultView(window));
         sfRenderWindow_display(window);
     }
@@ -235,10 +223,10 @@ void dessiner_tout(Une_coord no, Une_coord se, Un_elem **petit_carre, Un_noeud *
 }
 
 void dessiner_stations(Un_elem *liste, sfRenderWindow *window, Une_coord se, Une_coord no){
-    float lat_dis = se.lat - no.lat;
-    float lon_dis = no.lon - se.lon;
+    float lat_dis = no.lat - se.lat;
+    float lon_dis = se.lon - no.lon;
 
-    if(lat_dis > 0.17 || lon_dis > 0.07 ) return;
+    if(lon_dis > 0.24 || lat_dis > 0.13 ) return;
     while(liste != NULL){
         sfRenderWindow_drawCircleShape(window, liste->truc->data.sta.point, NULL);
         sfRenderWindow_drawText(window, liste->truc->data.sta.nom_shape, NULL);
@@ -247,21 +235,23 @@ void dessiner_stations(Un_elem *liste, sfRenderWindow *window, Une_coord se, Une
 }
 
 void dessiner_lignes(Un_elem *l, sfRenderWindow *window, Une_coord se, Une_coord no){
-    float lat_dis = se.lat - no.lat;
-    float lon_dis = no.lon - se.lon;
+    float lat_dis = no.lat - se.lat;
+    float lon_dis = se.lon - no.lon;
 
     while(l != NULL){
         Une_coord station1 = l->truc->data.con.sta_dep->coord;
         Une_coord station2 = l->truc->data.con.sta_arr->coord;
 
 
-        sfVector2f pos1 = {.x = ((station1.lat - no.lat) / lat_dis) * LARGEUR,
-                          .y = (1 - (station1.lon - se.lon) / lon_dis) * LONGUEUR
-                        };
+        sfVector2f pos1 = {
+            .x = ((station1.lon - no.lon) / lon_dis) * LARGEUR,
+            .y = (1 - (station1.lat - se.lat) / lat_dis) * LONGUEUR
+        };
 
-        sfVector2f pos2 = {.x = ((station2.lat - no.lat) / lat_dis) * LARGEUR,
-                          .y = (1 - (station2.lon - se.lon) / lon_dis) * LONGUEUR
-                        };
+        sfVector2f pos2 = {
+            .x = ((station2.lon - no.lon) / lon_dis) * LARGEUR,
+            .y = (1 - (station2.lat - se.lat) / lat_dis) * LONGUEUR
+        };
 
         double x = fabs(pos1.x - pos2.x);
         double y = fabs(pos1.y - pos2.y);
@@ -278,13 +268,13 @@ void dessiner_lignes(Un_elem *l, sfRenderWindow *window, Une_coord se, Une_coord
 
         double teta = atan(y/x) * 180.0 / PI;
 
-        if(station2.lat > station1.lat && station2.lon > station1.lon){
+        if(station2.lon > station1.lon && station2.lat > station1.lat){
             teta = -teta;
         }
-        else if(station2.lat < station1.lat && station2.lon < station1.lon){
+        else if(station2.lon < station1.lon && station2.lat < station1.lat){
             teta = 180 - teta;
         }
-        else if(station2.lat < station1.lat && station2.lon > station1.lon){
+        else if(station2.lon < station1.lon && station2.lat > station1.lat){
             teta -= 180;
         }
         sfRectangleShape_setRotation(l->truc->data.con.ligne_dessin, teta);
@@ -296,12 +286,13 @@ void dessiner_lignes(Un_elem *l, sfRenderWindow *window, Une_coord se, Une_coord
 void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no){
     if(l == NULL) return;
     sfFont *font = sfFont_createFromFile("Poppins-Regular.ttf");
-    float lat_dis = se.lat - no.lat;
-    float lon_dis = no.lon - se.lon;
+    float lat_dis = no.lat - se.lat;
+    float lon_dis = se.lon - no.lon;
     while(l != NULL){
-        sfVector2f pos = {.x = ((l->truc->coord.lat - no.lat) / lat_dis) * LARGEUR,
-                          .y = (1 - (l->truc->coord.lon - se.lon) / lon_dis) * LONGUEUR
-                        };
+        sfVector2f pos = {
+            .x = ((l->truc->coord.lon - no.lon) / lon_dis) * LARGEUR,
+            .y = (1 - (l->truc->coord.lat - se.lat) / lat_dis) * LONGUEUR
+        };
         sfCircleShape_setPosition(l->truc->data.sta.point, pos);
         pos.x -= strlen(l->truc->data.sta.nom);
         pos.y -= 12;

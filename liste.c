@@ -87,18 +87,18 @@ Un_elem *lire_stations( char *nom_fichier){
 
 void limites_zone(Un_elem *liste, Une_coord *nord_ouest, Une_coord *sud_est){
     if(liste == NULL) return;
-    sud_est->lon = FLT_MAX;
-    sud_est->lat = FLT_MIN;
+    sud_est->lon = FLT_MIN;
+    sud_est->lat = FLT_MAX;
 
-    nord_ouest->lon = FLT_MIN;
-    nord_ouest->lat = FLT_MAX;
+    nord_ouest->lon = FLT_MAX;
+    nord_ouest->lat = FLT_MIN;
 
     while(liste != NULL){
-        if(liste->truc->coord.lon < sud_est->lon) sud_est->lon = liste->truc->coord.lon;
-        if(liste->truc->coord.lat > sud_est->lat) sud_est->lat = liste->truc->coord.lat;
+        if(liste->truc->coord.lon > sud_est->lon) sud_est->lon = liste->truc->coord.lon;
+        if(liste->truc->coord.lat < sud_est->lat) sud_est->lat = liste->truc->coord.lat;
 
-        if(liste->truc->coord.lon > nord_ouest->lon) nord_ouest->lon = liste->truc->coord.lon;
-        if(liste->truc->coord.lat < nord_ouest->lat) nord_ouest->lat = liste->truc->coord.lat;
+        if(liste->truc->coord.lon < nord_ouest->lon) nord_ouest->lon = liste->truc->coord.lon;
+        if(liste->truc->coord.lat > nord_ouest->lat) nord_ouest->lat = liste->truc->coord.lat;
 
         liste = liste->suiv;
     }
