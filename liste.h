@@ -20,6 +20,8 @@ Un_elem *inserer_deb_liste(Un_elem *liste, Un_truc *truc);
 Un_elem *lire_connexions(char *nom_fichier, Une_ligne *liste_ligne, Un_nabr *abr_sta); 
 Un_truc *extraire_deb_liste(Un_elem **liste);
 Un_truc *extraire_liste(Un_elem **liste, Un_truc *truc);
+void dijkstra(Un_elem *liste_sta, Un_truc *sta_dep);
+Un_elem *cherche_chemin(Un_truc *sta_arr); 
 
 /* Fonctions ajoutées par nous même */
 

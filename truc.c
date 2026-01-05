@@ -12,7 +12,7 @@ Un_truc *creer_truc(Une_coord coord, Ttype type, Tdata data, double uv){
     truc->data = data;
     truc->user_val = uv;
     truc->data.sta.point = sfCircleShape_create();
-    sfCircleShape_setRadius(truc->data.sta.point, 4);
+    sfCircleShape_setRadius(truc->data.sta.point, 2);
     sfCircleShape_setFillColor(truc->data.sta.point, sfBlue);
     truc->data.sta.nom_shape = sfText_create();
     sfText_setString(truc->data.sta.nom_shape, truc->data.sta.nom);

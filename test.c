@@ -14,17 +14,18 @@
 
 #define LARGEUR 1800
 #define LONGUEUR 900
-#define STEP 0.001
+#define STEP 0.002
 #define ZOOM_STEP 0.01
 #define SIZE_BETWEEN 0.05
 
 #define PI 3.14159265358979323846
 
 void dessiner_tout(Une_coord no, Une_coord se, Un_elem **petit_carre, Un_noeud *aqr, Un_elem *liste_des_connexions);
-void dessiner_stations(Un_elem *liste, sfRenderWindow *window);
+void dessiner_stations(Un_elem *liste, sfRenderWindow *window, Une_coord se, Une_coord no);
 void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no);
 void dessiner_lignes(Un_elem *l, sfRenderWindow *window, Une_coord se, Une_coord no);
 int conversion_hex_vers_decimal(char *depart);
+void affichage_iteniraire(Un_elem *l, int direction);
 
 int main(int argc, char **argv){
     Un_elem *l = lire_stations(argv[1]);
@@ -73,6 +74,68 @@ int main(int argc, char **argv){
                 se.lon = station_recherche->coord.lon - SIZE_BETWEEN/2;
                 dessiner_tout(no, se, &petit_carre, aqr, liste_des_connexions);  
             }
+            else{
+                printf("Veuillez saisir un nom de station valide !");
+                printf("\33[1E");
+                printf("Appuyez sur une touche pour retourner au menu :)");
+                refresh();
+                fflush(stdout);
+                getch();
+            }
+        }
+        else if(choix == 3){
+            printf("Entrez le nom de la station de départ : ");
+            // Pour remettre le cursor
+            printf("\33[?25h");
+            char nom[200];
+            scanf(" %[^\n]", nom);
+            Un_truc *depart = chercher_station(abr, nom);
+
+            printf("Entrez le nom de la station d'arrivé : ");
+            scanf(" %[^\n]", nom);
+            Un_truc *arrive = chercher_station(abr, nom);
+
+
+            printf("\33[2J");
+            printf("\33[H");
+            refresh();
+            fflush(stdout);
+
+            int changement = 0;
+            if(depart == NULL || arrive == NULL){
+                printf("Veuillez saisir des noms de stations valides !");
+                printf("\33[1E");
+            }
+            else{
+                dijkstra(l, depart);
+                Un_elem *chemin = cherche_chemin(arrive);
+                if(chemin == NULL){
+                    dijkstra(l, arrive);
+                    chemin = cherche_chemin(depart);
+                    changement = 1;
+                }
+
+                if(chemin != NULL){
+                    float temps = 0.0;
+                    if(changement) temps = depart->user_val;
+                    else temps = arrive->user_val;
+
+                    affichage_iteniraire(chemin, changement);
+                    printf("\33[1E");
+                    printf("Temps total : %.2lf minutes !", temps);
+                    printf("\33[1E");
+
+                }
+
+
+                detruire_liste(chemin);
+            }
+            
+            printf("\33[1E");
+            printf("Appuyez sur une touche pour retourner au menu :)");
+            refresh();
+            fflush(stdout);
+            getch();
         }
 
     }while(choix != NB);
@@ -100,6 +163,8 @@ void dessiner_tout(Une_coord no, Une_coord se, Un_elem **petit_carre, Un_noeud *
     int mousePressed = 0;
     sfVector2i currentMouseCord = sfMouse_getPositionRenderWindow(window);
     while (sfRenderWindow_isOpen(window)) {
+        printf("NO : lat = %lf ; lon = %lf\n", no.lat, no.lon);
+        printf("SE : lat = %lf ; lon = %lf\n", se.lat, se.lon);
         sfEvent event;
         while (sfRenderWindow_pollEvent(window, &event)) {
             if (event.type == sfEvtClosed) {
@@ -112,14 +177,18 @@ void dessiner_tout(Une_coord no, Une_coord se, Un_elem **petit_carre, Un_noeud *
                         no.lat -= ZOOM_STEP;
                         se.lon -= ZOOM_STEP;
                         no.lon += ZOOM_STEP;
+                        detruire_liste(*petit_carre);
+                        *petit_carre = chercher_zone(aqr, NULL, se, no);
                     }
                 }
                 else{
-                    if(no.lon - se.lon >= SIZE_BETWEEN && se.lat - no.lat >= SIZE_BETWEEN * 2){
+                    if(no.lon - se.lon >= 0.065 && se.lat - no.lat >= 0.165){
                         se.lat -= ZOOM_STEP;
                         no.lat += ZOOM_STEP;
                         se.lon += ZOOM_STEP;
                         no.lon -= ZOOM_STEP;
+                        detruire_liste(*petit_carre);
+                        *petit_carre = chercher_zone(aqr, NULL, se, no);
                     }
                 }
             }
@@ -149,24 +218,27 @@ void dessiner_tout(Une_coord no, Une_coord se, Un_elem **petit_carre, Un_noeud *
                     se.lon -= STEP;
                     no.lon -= STEP;
                 } 
+                detruire_liste(*petit_carre);
+                *petit_carre = chercher_zone(aqr, NULL, se, no);
             }
-
-            detruire_liste(*petit_carre);
-            *petit_carre = chercher_zone(aqr, NULL, se, no);
             mettre_a_jour_les_cercles(*petit_carre, se, no);
         }
         currentMouseCord = sfMouse_getPositionRenderWindow(window);
 
         sfRenderWindow_clear(window, sfWhite);
         dessiner_lignes(liste_des_connexions, window, se, no);
-        dessiner_stations(*petit_carre, window);
+        dessiner_stations(*petit_carre, window, se, no);
         sfRenderWindow_setView(window, sfRenderWindow_getDefaultView(window));
         sfRenderWindow_display(window);
     }
     sfRenderWindow_destroy(window);
 }
 
-void dessiner_stations(Un_elem *liste, sfRenderWindow *window){
+void dessiner_stations(Un_elem *liste, sfRenderWindow *window, Une_coord se, Une_coord no){
+    float lat_dis = se.lat - no.lat;
+    float lon_dis = no.lon - se.lon;
+
+    if(lat_dis > 0.17 || lon_dis > 0.07 ) return;
     while(liste != NULL){
         sfRenderWindow_drawCircleShape(window, liste->truc->data.sta.point, NULL);
         sfRenderWindow_drawText(window, liste->truc->data.sta.nom_shape, NULL);
@@ -196,7 +268,7 @@ void dessiner_lignes(Un_elem *l, sfRenderWindow *window, Une_coord se, Une_coord
 
         double dis = sqrt(x*x + y*y);
  
-        sfVector2f size = {.x = dis, .y = 2};
+        sfVector2f size = {.x = dis, .y = 3};
         sfRectangleShape_setSize(l->truc->data.con.ligne_dessin, size);
         char *color = l->truc->data.con.ligne->color;
 
@@ -232,10 +304,10 @@ void mettre_a_jour_les_cercles(Un_elem *l, Une_coord se, Une_coord no){
                         };
         sfCircleShape_setPosition(l->truc->data.sta.point, pos);
         pos.x -= strlen(l->truc->data.sta.nom);
-        pos.y -= 8;
+        pos.y -= 12;
         sfText_setPosition(l->truc->data.sta.nom_shape, pos);
         sfText_setFont(l->truc->data.sta.nom_shape, font);
-        sfText_setCharacterSize(l->truc->data.sta.nom_shape, 8);
+        sfText_setCharacterSize(l->truc->data.sta.nom_shape, 10);
         l = l->suiv;
     }
 }
@@ -276,4 +348,15 @@ int conversion_hex_vers_decimal(char *depart){
     }
 
     return dec;
+}
+
+void affichage_iteniraire(Un_elem *l, int direction){
+    if(l == NULL) return;
+    if (direction == 0){
+        printf("%s", l->truc->data.sta.nom);
+        if(l->suiv != NULL){
+            printf(" --> ");
+        }
+        affichage_iteniraire(l->suiv, direction);
+    }
 }

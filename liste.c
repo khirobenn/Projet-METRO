@@ -4,7 +4,7 @@
 #include <string.h>
 #include <float.h>
 
-#define TAILLE_NOM 40
+#define TAILLE_NOM 128
 
 Un_elem *inserer_liste_trie(Un_elem *liste, Un_truc *truc){
     if(liste == NULL){
@@ -14,7 +14,7 @@ Un_elem *inserer_liste_trie(Un_elem *liste, Un_truc *truc){
         return l;
     }
     
-    if(truc->coord.lat < liste->truc->coord.lat){
+    if(truc->user_val < liste->truc->user_val){
         Un_elem *l = malloc(sizeof(Un_elem));
         l->truc = truc;
         l->suiv = liste;
@@ -28,10 +28,12 @@ Un_elem *inserer_liste_trie(Un_elem *liste, Un_truc *truc){
 void ecrire_liste( FILE *flux, Un_elem *liste){
     while(liste != NULL){
         if(liste->truc->type == STA){
-            printf("Latitude : %f\tLongitude: %.2f\t nom : %s\n", liste->truc->coord.lat, liste->truc->coord.lon, liste->truc->data.sta.nom);
+            printf("Latitude : %f\tLongitude: %.2f\t nom : %s", liste->truc->coord.lat, liste->truc->coord.lon, liste->truc->data.sta.nom);
+            printf("\33[1E");
         }
         else{
-            printf("> %s : %s ---> %s | temps estimation :  %.2f minutes.\n", liste->truc->data.con.ligne->code, liste->truc->data.con.sta_dep->data.sta.nom, liste->truc->data.con.sta_arr->data.sta.nom, liste->truc->user_val);
+            printf("> %s : %s ---> %s | temps estimation :  %.2f minutes.", liste->truc->data.con.ligne->code, liste->truc->data.con.sta_dep->data.sta.nom, liste->truc->data.con.sta_arr->data.sta.nom, liste->truc->user_val);
+            printf("\33[1E");
         }
         liste = liste->suiv;
     }
@@ -75,7 +77,7 @@ Un_elem *lire_stations( char *nom_fichier){
         Tdata data;
         data.sta = station;
         
-        Un_truc *truc = creer_truc(cord, STA, data, 0);
+        Un_truc *truc = creer_truc(cord, STA, data, cord.lat);
 
         head = inserer_liste_trie(head, truc);
     }
@@ -112,7 +114,6 @@ Un_elem *inserer_deb_liste(Un_elem *liste, Un_truc *truc){
 Un_elem *lire_connexions(char *nom_fichier, Une_ligne *liste_ligne, Un_nabr *abr_sta){
     FILE *f = fopen(nom_fichier, "r");
     if(f == NULL){
-        printf("Erreur lecture du fichier!\n");
         return NULL;
     }
 
@@ -121,7 +122,6 @@ Un_elem *lire_connexions(char *nom_fichier, Une_ligne *liste_ligne, Un_nabr *abr
 
     while(fgets(line, 200, f) != NULL){
         if(line[0] != '#'){
-            printf("%s", line);
             char code_ligne[CODE_TAILLE];
             char nom_sta1[TAILLE_NOM];
             char nom_sta2[TAILLE_NOM];
@@ -136,23 +136,15 @@ Un_elem *lire_connexions(char *nom_fichier, Une_ligne *liste_ligne, Un_nabr *abr
 
                 // %%Calcul de la durée si duree == 0
                 if(sta1 != NULL && sta2 != NULL){
-                    ajout_connexion(sta1, sta2);
-                    ajout_connexion(sta2, sta1);
                     Tdata data = {.con.ligne = ligne, .con.sta_dep = sta1, .con.sta_arr = sta2};
                     Une_coord cord = {.lat = .0, .lon = .0};
-    
+                    
                     Un_truc *truc = creer_truc(cord, CON, data, duree);
+                    ajout_connexion(sta1, truc);
                     truc->data.con.ligne_dessin = sfRectangleShape_create();
                     connexion = inserer_deb_liste(connexion, truc);
-                    printf("> Connexion ajouté avec succés.\n\n");
-                }
-                else{
-                    printf("> Erreur : station non existante.\n\n");
                 }
             }
-        }
-        else{
-            printf("// --- Commentaire --- //\n");
         }
     }
     fclose(f);
@@ -183,7 +175,9 @@ Un_truc *extraire_deb_liste(Un_elem **liste){
     Un_elem *t = *liste;
     *liste = (*liste)->suiv;
     t->suiv = NULL;
-    return t->truc;
+    Un_truc *truc = t->truc;
+    detruire_liste(t);
+    return truc;
 }
 
 Un_truc *extraire_liste(Un_elem **liste, Un_truc *truc){
@@ -204,4 +198,61 @@ Un_truc *extraire_liste(Un_elem **liste, Un_truc *truc){
     }
 
     return truc;
+}
+
+void dijkstra(Un_elem *liste_sta, Un_truc *sta_dep){
+    Un_elem *tete = liste_sta;
+    while(tete != NULL){
+        tete->truc->user_val = FLT_MAX;
+        tete->truc->data.sta.con_pcc = NULL;
+        tete = tete->suiv;
+    }
+
+    sta_dep->user_val = 0.0;
+    sta_dep->data.sta.con_pcc = sta_dep;
+    
+    Un_elem *Q = NULL;
+
+    tete = liste_sta;
+
+    while(tete != NULL){
+        Q = inserer_liste_trie(Q, tete->truc);
+        tete = tete->suiv;
+    }
+
+    while(Q != NULL){
+        Un_truc *current = extraire_deb_liste(&Q);
+        for (int i = 0; i < current->data.sta.nb_con; i++){
+            Un_truc *connexion = current->data.sta.tab_con[i];
+            float duree = current->user_val + connexion->user_val;
+            if(duree < connexion->data.con.sta_arr->user_val){
+                connexion->data.con.sta_arr->user_val = duree;
+                connexion->data.con.sta_arr->data.sta.con_pcc = current;
+            }
+        }
+
+        tete = Q;
+        Q = NULL;
+
+        while(tete != NULL){
+            Q = inserer_liste_trie(Q, tete->truc);
+            tete = tete->suiv;
+        }
+    }
+}
+
+Un_elem *cherche_chemin(Un_truc *sta_arr){
+    if(sta_arr == NULL || sta_arr->data.sta.con_pcc == NULL) return NULL;
+    Un_elem *elem = NULL;
+    while(sta_arr != NULL && sta_arr->data.sta.con_pcc != sta_arr){
+        elem = inserer_deb_liste(elem, sta_arr);
+        sta_arr = sta_arr->data.sta.con_pcc;
+    }
+
+    if(sta_arr == NULL){
+        detruire_liste(elem);
+        return NULL;
+    }
+
+    return inserer_deb_liste(elem, sta_arr);    
 }
